@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: credit-service
+spec:
+  selector:
+    app: credit-service
+  ports:
+    - port: 80
+      nodePort: 30085 # exposing to local, to access this service
+      targetPort: 8085
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-service
+  template:
+    metadata:
+      labels:
+        app: credit-service
+    spec:
+      containers:
+        - name: credit-service
+          image: proj2_credit-service
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: prod
+            - name: MYSQL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: database-configs
+                  key: credit_mysqlURL
+
+            - name: MYSQL_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: database-configs
+                  key: credit_dbName
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: jwt-secret-key
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: database-secret
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-secret
+                  key: password
+          imagePullPolicy: Never
